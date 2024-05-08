@@ -2,6 +2,8 @@ from flask import request, jsonify
 from config import app, db
 from models import Contact
 
+
+
 @app.route("/contacts", methods=['GET'])
 def get_contacts():
     contacts = Contact.query.all()
@@ -13,6 +15,7 @@ def create_contact():
     first_name = request.json.get("firstName")
     last_name = request.json.get("lastName")
     email = request.json.get("email")
+    gamertag = request.json.get("gamertag")
 
     if not first_name or not last_name or not email:
         return(
@@ -20,7 +23,11 @@ def create_contact():
         )
     
     
-    new_contact = Contact(first_name=first_name, last_name=last_name, email=email)
+    new_contact = Contact(
+        first_name=first_name, 
+        last_name=last_name, 
+        email=email, 
+        gamertag=gamertag)
     try:
         db.session.add(new_contact)
         db.session.commit()
@@ -30,6 +37,36 @@ def create_contact():
     
     return jsonify({"message":"User created"}, 201)
 
+
+@app.route("/update_contact/<int:user_id>", methods=["PATCH"])
+def update_contact(user_id):
+    contact = Contact.query.get(user_id)
+
+    if not contact:
+        return jsonify({"message" : "User not found"}), 404
+    
+    data = request.json
+    contact.first_name = data.get("firstName", contact.first_name)
+    contact.last_name = data.get("lastName", contact.last_name)
+    contact.email = data.get("email", contact.email)
+    contact.gamertag = data.get("gamertag", contact.email)
+
+    db.session.commit()
+
+    return jsonify({'message' : "User Updated!"}), 200
+
+
+@app.route("/delete_contact/<int:user_id>", methods = ["DELETE"])
+def delete_contact(user_id):
+    contact = Contact.query.get(user_id)
+
+    if not contact:
+        return jsonify({"message" : "User not found" }), 404
+    
+    db.session.delete(contact)
+    db.session.commit()
+
+    return  jsonify({"message":"User deleted"}), 200
 
 if __name__ == "__main__":
     with app.app_context():
